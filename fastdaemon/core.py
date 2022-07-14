@@ -112,7 +112,6 @@ def fastdaemon_client(
     "Forward `sys.args` and `sys.stdin` to `fastdaemon_server` and write response `stdout` and `stderr`"
     args = ' '.join(sys.argv[1:])
     stdin = wrapio(sys.stdin).read() if not sys.stdin.isatty() else '' # TODO: wrapio needed?
-    print(f'{args=} {stdin=}')
     stdout,stderr = send_recv((stdin,args), port, host)
     sys.stderr.write(stderr)
     sys.stdout.write(stdout)
