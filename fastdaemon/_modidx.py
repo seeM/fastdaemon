@@ -33,4 +33,5 @@ d = { 'settings': { 'audience': 'Developers',
                                  'fastdaemon.core.DaemonServer.handle_timeout': 'https://seem.github.io/fastdaemon/core#DaemonServer.handle_timeout',
                                  'fastdaemon.core.DaemonServer.server_activate': 'https://seem.github.io/fastdaemon/core#DaemonServer.server_activate',
                                  'fastdaemon.core.DaemonServer.server_close': 'https://seem.github.io/fastdaemon/core#DaemonServer.server_close',
-                                 'fastdaemon.core.fastdaemon': 'https://seem.github.io/fastdaemon/core#fastdaemon'}}}
+                                 'fastdaemon.core.fastdaemon_serve': 'https://seem.github.io/fastdaemon/core#fastdaemon_serve',
+                                 'fastdaemon.core.send_recv': 'https://seem.github.io/fastdaemon/core#send_recv'}}}
