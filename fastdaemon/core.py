@@ -4,43 +4,47 @@
 __all__ = ['DaemonHandler', 'DaemonServer', 'fastdaemon']
 
 # %% ../00_core.ipynb 2
-from concurrent.futures import ProcessPoolExecutor
 from contextlib import redirect_stdout
 from io import StringIO
 from multiprocessing import get_context
 from socketserver import TCPServer, StreamRequestHandler
-import time
 
 from fastcore.meta import *
 from fastcore.script import *
 from fastcore.utils import *
 
-from nbprocess.clean import nbprocess_clean
+from nbprocess.clean import nbprocess_clean # TODO: Move to a test notebook?
 
 # %% ../00_core.ipynb 5
-def _handle(func, data):
+def _handle(cmd, data):
+    "Execute `cmd` with args parsed from `data` and return `stdout`"
     argv = data.decode().strip()
-    sys.argv = [func.__name__] + (argv.split(' ') if argv else [])
+    sys.argv = [cmd.__name__] + (argv.split(' ') if argv else [])
     print('sys.argv:', sys.argv)
-    with redirect_stdout(StringIO()) as s: func()
+    with redirect_stdout(StringIO()) as s: cmd()
     return s.getvalue().encode()
 
 # %% ../00_core.ipynb 6
 class DaemonHandler(StreamRequestHandler):
+    "Execute server's `cmd` with request args using server's process pool"
     def handle(self):
         data = self.rfile.readline().strip()
         print("{} wrote:".format(self.client_address[0]))
         print('data:', data)
-        future = self.server.pool.submit(_handle, self.server.func, data)
+        future = self.server.pool.submit(_handle, self.server.cmd, data)
         result = future.result()
         print('result:', result)
         self.wfile.write(result)
 
-# %% ../00_core.ipynb 7
-class DaemonServer(TCPServer):
+# %% ../00_core.ipynb 8
+class DaemonServer(TCPServer): # TODO: Could be a mixin to work with other servers; `Pool(ed)Server`?
+    "A `TCPServer` that executes `cmd` with request args using a process pool"
     @delegates(TCPServer)
-    def __init__(self, server_address, RequestHandlerClass, func, timeout=None, **kwargs):
-        self.func,self.timeout = func,timeout
+    def __init__(self, server_address, cmd, RequestHandlerClass=DaemonHandler, timeout=None, **kwargs):
+        # TODO: Is this the best place for `cmd`?
+        self.cmd = cmd
+        if timeout is not None: self.timeout = timeout
+        self.allow_reuse_address = True
         super().__init__(server_address, RequestHandlerClass)
         
     def server_activate(self):
@@ -55,18 +59,8 @@ class DaemonServer(TCPServer):
         print('timed out')
         return True
 
-# %% ../00_core.ipynb 11
-if __name__ == '__main__':
-    with DaemonServer(('localhost',9999), DaemonHandler, nbprocess_clean, 3) as srv:
+# %% ../00_core.ipynb 15
+@call_parse
+def fastdaemon(): # TODO: should be a decorator
+    with DaemonServer(('localhost',9999), nbprocess_clean, timeout=3) as srv:
         while not srv.handle_request(): pass
-
-# %% ../00_core.ipynb 12
-@call_parse#(nested=True)
-def fastdaemon():
-    "Fast scripts using daemon mode"
-    print(f'Called fastdaemon, with: {locals()}')
-    with ProcessPoolExecutor() as pool:
-        future = pool.submit(add1, 0)
-        result = future.result()
-        print(pool._processes)
-    return result
