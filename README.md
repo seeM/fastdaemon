@@ -16,20 +16,20 @@ pip install git+https://github.com/seem/fastdaemon.git
 
 ## How to use
 
-Although fastdaemon is still under development, you can use it to run
-`nbprocess`’s git hooks. First start a server wrapping
-`nbprocess_clean`. **Beware** - it is not considered stable and you
-could lose your work!
+**NB: fastdaemon is experimental. Use it at your own risk!**
+
+Although fastdaemon is still under development, you can try using it to
+run `nbprocess`’s git hooks. First, serve `nbprocess_clean`:
 
 ``` sh
-python serve_nbprocess_clean.py
+fastdaemon_serve nbprocess.clean:nbprocess_clean 9998
 ```
 
 Then update your `.gitconfig` as follows:
 
     [filter "clean-nbs"]
-            clean = python client.py 9998 -- --stdin
+            clean = fastdaemon_client 9998 -- --stdin
             smudge = cat
             required = true
     [diff "ipynb"]
-            textconv = python client.py 9998 --disp --fname
+            textconv = fastdaemon_client 9998 -- --disp --fname
