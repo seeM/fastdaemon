@@ -19,7 +19,8 @@ pip install git+https://github.com/seem/fastdaemon.git
 **NB: fastdaemon is experimental. Use it at your own risk!**
 
 Although fastdaemon is still under development, you can try using it to
-run `nbprocess`’s git hooks. First, serve `nbprocess_clean`:
+run [`nbprocess`](https://github.com/fastai/nbprocess)’s git hooks.
+First, serve `nbprocess_clean`:
 
 ``` sh
 fastdaemon_serve nbprocess.clean:nbprocess_clean 9998
@@ -27,9 +28,11 @@ fastdaemon_serve nbprocess.clean:nbprocess_clean 9998
 
 Then update your `.gitconfig`:
 
-    [filter "clean-nbs"]
-            clean = fastdaemon_client 9998 -- --stdin
-            smudge = cat
-            required = true
-    [diff "ipynb"]
-            textconv = fastdaemon_client 9998 -- --disp --fname
+``` ini
+[filter "clean-nbs"]
+        clean = fastdaemon_client 9998 -- --stdin
+        smudge = cat
+        required = true
+[diff "ipynb"]
+        textconv = fastdaemon_client 9998 -- --disp --fname
+```
