@@ -25,7 +25,7 @@ run `nbprocess`’s git hooks. First, serve `nbprocess_clean`:
 fastdaemon_serve nbprocess.clean:nbprocess_clean 9998
 ```
 
-Then update your `.gitconfig` as follows:
+Then update your `.gitconfig`:
 
     [filter "clean-nbs"]
             clean = fastdaemon_client 9998 -- --stdin
