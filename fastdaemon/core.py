@@ -55,7 +55,7 @@ def start_client(port, host=None, dgram=False):
 
 # %% ../00_core.ipynb 19
 def transfer(data, port, host=None, dgram=False):
-    "Send a request and receive a reply in one socket"
+    "Send a request and receive a reply in one socket using the fastdaemon protocol"
     with start_client(port, host, dgram) as client:
         with client.makefile('wb') as f: send_record(f.write, data)
         with client.makefile('rb') as f: return recv_record(f.read)
