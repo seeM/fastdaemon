@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "core.html",
+    "href": "core.html",
+    "title": "core",
+    "section": "",
+    "text": "Since this module defines the client, it’s important that it has minimal dependencies for us to actually benefit from faster startup. The protocol is largely based on fastcgi though much less feature-full."
+  },
+  {
+    "objectID": "core.html#protocol",
+    "href": "core.html#protocol",
+    "title": "core",
+    "section": "Protocol",
+    "text": "Protocol\n\n\n\n\nsend_record\n\n send_record (w, c)\n\nSend a sequence of length-prefixed utf-8-encoded strings\n\n\n\n\nss = ['from fastcore.all import *', 'nbdev_clean --stdin']\nf = BytesIO()\nsend_record(f.write, ss)\nb = f.getvalue(); b\n\nb'\\x00\\x00\\x00\\x1afrom fastcore.all import *\\x00\\x00\\x00\\x17nbdev_clean --stdin'\n\n\n\n_recv_len(BufferedReader(BytesIO(b)).read)\n\n26\n\n\n\n\n\n\nrecv_record\n\n recv_record (r)\n\nReceive two variable-length utf-8-encoded strings\n\n\n\n\nrecv_record(BytesIO(b).read)\n\n['from fastcore.all import *', 'nbdev_clean --stdin']\n\n\n\n\n\n\nstart_client\n\n start_client (port, host=None, dgram=False)\n\nCreate a socket client on port, with optional host, of type dgram\n\n\n\n\n\n\n\ntransfer\n\n transfer (data, port, host=None, dgram=False)\n\nSend a request and receive a reply in one socket using the fastdaemon protocol\n\n\n\n\nclass EchoHandler(StreamRequestHandler):\n    def handle(self): self.wfile.write(self.rfile.readline())\n\n\np = Path('fdaemon.sock')\nif p.exists(): p.unlink()\n\n@threaded\ndef _f():\n    with UnixStreamServer(str(p), EchoHandler) as srv: srv.handle_request()\n_f()\ntime.sleep(0.2) # wait for server to start\n\n\ntransfer(['Input via stdin', 'world\\n'], str(p)) # trailing \\n is required since TestHandler uses `readline`\n\n['Input via stdin', 'world\\n']"
+  },
+  {
+    "objectID": "core.html#client",
+    "href": "core.html#client",
+    "title": "core",
+    "section": "Client",
+    "text": "Client\n\n\n\n\nfastdaemon_client\n\n fastdaemon_client (argv=None)\n\nForward sys.argv and sys.stdin to server and write response to sys.stdout and sys.stderr\n\n\n\n\n!fastdaemon_client -h\n\nusage: fastdaemon_client [-h] [--host HOST] [--dgram] port\n\nForward `sys.argv` and `sys.stdin` to server and write response to\n`sys.stdout` and `sys.stderr`\n\npositional arguments:\n  port         Server port. Use int for TCP, and str for Unix socket\n\noptional arguments:\n  -h, --help   show this help message and exit\n  --host HOST  Server host (default: `socket.gethostname()`)\n  --dgram      Use `SOCK_DGRAM`?"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "fastdaemon",
+    "section": "",
+    "text": "NB: fastdaemon is experimental. Use it at your own risk!"
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "fastdaemon",
+    "section": "Install",
+    "text": "Install\nfastdaemon isn’t hosted on PyPI yet, but you can install it directly from GitHub:\npip install git+https://github.com/seem/fastdaemon.git"
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "fastdaemon",
+    "section": "How to use",
+    "text": "How to use\nNB: fastdaemon is experimental. Use it at your own risk!\nAlthough fastdaemon is still under development, you can try using it to run nbdev’s git hooks. First, serve nbdev_clean:\nfastdaemon_serve nbdev.clean:nbdev_clean 9998\nThen update your .gitconfig:\n[filter \"clean-nbs\"]\n        clean = fastdaemon_client 9998 -- --stdin\n        smudge = cat\n        required = true\n[diff \"ipynb\"]\n        textconv = fastdaemon_client 9998 -- --disp --fname"
+  },
+  {
+    "objectID": "serve.html",
+    "href": "serve.html",
+    "title": "serve",
+    "section": "",
+    "text": "CmdHandler\n\n CmdHandler (request, client_address, server)\n\nRun self.server.cmd with request’s argv and stdin; return stdout and stderr\n\n\n\nCmdHandler’s primary use-case is together with a server inheriting CmdMixin, however it supports any socketserver.BaseServer that has a cmd attribute. If the server also has a pool it’s used to execute cmd.\nHere’s an example of how to use CmdHandler. First, define the command. It should have no arguments itself but rather parse its arguments from sys.argv. Its return value isn’t used, instead it should write to stdout.\n\ndef _cmd():\n    sys.stdout.write(sys.stdin.read()+sys.argv[1])\n    sys.stderr.write('Error!')\n\nThen define a server with a cmd attribute:\n\nclass _CmdServer(UnixStreamServer): cmd = lambda x: _cmd()\n\nStart the server. We start it with handle_request in a separate thread:\n\np = Path('fdaemon.sock')\nif p.exists(): p.unlink()\n\n@threaded\ndef _f():\n    with _CmdServer(str(p), CmdHandler) as srv: srv.handle_request()\n_f()\ntime.sleep(0.2) # wait for server to start\n\n…so that we can send a request and print its response:\n\ntransfer(['Hello, ', 'world!'], str(p))\n\nlen(stdin)=7 argv=['<lambda>', 'world!']\n\n\n['Hello, world!', 'Error!']\n\n\n\n\n\n\nCmdMixin\n\n CmdMixin (server_address, cmd, pool=None,\n           RequestHandlerClass=<class'__main__.CmdHandler'>, timeout=None,\n           **kwargs)\n\nSocket server with a cmd and optional pool\n\n\n\n\nclass CmdUnixServer(CmdMixin, ThreadingUnixStreamServer): pass\n\n\np = Path('fdaemon.sock')\nif p.exists(): p.unlink()\n\n@threaded\ndef _f():\n    with ProcessPoolExecutor() as pool, CmdUnixServer(str(p), _cmd, pool) as srv: srv.handle_request()\n_f()\ntime.sleep(0.2) # wait for server to start\n\n\ntransfer(['Hello, ', 'world!'], str(p))\n\nlen(stdin)=7 argv=['_cmd', 'world!']\n\n\n['Hello, world!', 'Error!']\n\n\n\n\n\n\nCmdTCPServer\n\n CmdTCPServer (server_address, cmd, pool=None,\n               RequestHandlerClass=<class'__main__.CmdHandler'>,\n               timeout=None, **kwargs)\n\nSocket server with a cmd and optional pool\n\n\n\nA convenient wrapper to instantiate and start a CmdTCPServer that handles requests until it’s interrupted or times out. Here’s the previous example using _fastdaemon_serve. We’ve also set a timeout to avoid running forever:\n\nhost,port = 'localhost',9999\n\n@threaded\ndef _f(): _fastdaemon_serve(_cmd, port, host, timeout=1)\n_f()\ntime.sleep(0.4) # wait for server to start\n\n\ntransfer(['Hello, ', 'world!'], port, host)\n\nlen(stdin)=7 argv=['_cmd', 'world!']\n\n\n['Hello, world!', 'Error!']\n\n\n\n_import_cmd('nbdev.clean:nbdev_clean')\n\n<function nbdev.clean.nbdev_clean(fname: str = None, clear_all: bool = False, disp: bool = False, stdin: bool = False)>\n\n\n\n\n\n\nfastdaemon_serve\n\n fastdaemon_serve (cmd:str, port:int, host:str='localhost',\n                   timeout:int=None)\n\nServe cmd on port, with optional host and timeout\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ncmd\nstr\n\nModule path to callable command (example: pkg.mod:obj)\n\n\nport\nint\n\nServer port\n\n\nhost\nstr\nlocalhost\nServer host\n\n\ntimeout\nint\nNone\nShutdown after timeout seconds without requests\n\n\n\n\n\n\n\n!fastdaemon_serve -h\n\nusage: fastdaemon_serve [-h] [--host HOST] [--timeout TIMEOUT] cmd port\n\nServe `cmd` on `port`, with optional `host` and `timeout`\n\npositional arguments:\n  cmd                Module path to callable command (example: pkg.mod:obj)\n  port               Server port\n\noptional arguments:\n  -h, --help         show this help message and exit\n  --host HOST        Server host (default: localhost)\n  --timeout TIMEOUT  Shutdown after `timeout` seconds without requests"
+  }
+]
