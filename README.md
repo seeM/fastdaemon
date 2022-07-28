@@ -19,11 +19,11 @@ pip install git+https://github.com/seem/fastdaemon.git
 **NB: fastdaemon is experimental. Use it at your own risk!**
 
 Although fastdaemon is still under development, you can try using it to
-run [`nbprocess`](https://github.com/fastai/nbprocess)’s git hooks.
-First, serve `nbprocess_clean`:
+run [`nbdev`](https://github.com/fastai/nbdev)’s git hooks.
+First, serve `nbdev_clean`:
 
 ``` sh
-fastdaemon_serve nbprocess.clean:nbprocess_clean 9998
+fastdaemon_serve nbdev.clean:nbdev_clean 9998
 ```
 
 Then update your `.gitconfig`:
